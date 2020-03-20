@@ -1,0 +1,221 @@
+[gd_scene load_steps=14 format=2]
+
+[ext_resource path="res://Sprites/KidAnims.tres" type="SpriteFrames" id=1]
+[ext_resource path="res://Sprites/ForestTiles.tres" type="TileSet" id=2]
+[ext_resource path="res://Sprites/FireTiles.tres" type="TileSet" id=3]
+[ext_resource path="res://Sprites/IceTiles.tres" type="TileSet" id=4]
+[ext_resource path="res://Scripts/KidScript.gd" type="Script" id=5]
+[ext_resource path="res://Sprites/04-normal-map.png" type="Texture" id=6]
+[ext_resource path="res://Scripts/ShaderControler.gd" type="Script" id=7]
+[ext_resource path="res://Sprites/ForestBack.png" type="Texture" id=18]
+[ext_resource path="res://Sprites/IceBack.png" type="Texture" id=19]
+[ext_resource path="res://Sprites/FireBack.png" type="Texture" id=20]
+
+[sub_resource type="CapsuleShape2D" id=1]
+radius = 20.0
+height = 40.0
+
+[sub_resource type="Shader" id=2]
+code = "shader_type canvas_item;
+render_mode unshaded;
+
+uniform float temperatureRange : hint_range(-1.0, 1.0);
+uniform vec4 hotColor : hint_color;
+uniform vec4 coldColor : hint_color;
+
+uniform float heatAmplitude : hint_range(0.0, 0.15);
+uniform float heatPeriod;
+uniform float heatPhaseShift;
+uniform float heatUpperLimit : hint_range(0.5, 10.0);
+
+uniform sampler2D coldNormal : hint_normal;
+uniform float coldFXStrength : hint_range(0.0, 1.0);
+
+void fragment() {
+	float currentHot = clamp(temperatureRange, 0.0, 1.0);
+	float currentCold = -clamp(temperatureRange, -1.0, 0.0);
+	vec4 hotnessColor = (hotColor * currentHot);
+	vec4 coldnessColor = (coldColor * currentCold);
+	float effectStrength = coldFXStrength * currentCold;
+	vec2 modifiedUVHot = SCREEN_UV;
+	vec2 modifiedUVCold = SCREEN_UV;
+	
+	modifiedUVHot.x -= (((1.0 - modifiedUVHot.y) * heatAmplitude) *
+		sin(heatPeriod * (modifiedUVHot.y - (TIME * 0.016  * heatPhaseShift)))) *
+		clamp(1.0 - (modifiedUVHot.y * (10.0 - heatUpperLimit)), 0.0, 0.5) *
+		currentHot;
+	
+	modifiedUVCold += (texture(coldNormal, UV).xy * effectStrength) - effectStrength * 0.5;
+	
+	COLOR = texture(SCREEN_TEXTURE, (modifiedUVHot + modifiedUVCold) * 0.5);
+	COLOR.rgb += hotnessColor.rgb * hotnessColor.a;
+	COLOR.rgb += coldnessColor.rgb * coldnessColor.a; 
+}"
+
+[sub_resource type="ShaderMaterial" id=3]
+shader = SubResource( 2 )
+shader_param/temperatureRange = 0.0
+shader_param/hotColor = Color( 1, 0.392157, 0, 0.392157 )
+shader_param/coldColor = Color( 0, 0.501961, 1, 0.196078 )
+shader_param/heatAmplitude = 0.15
+shader_param/heatPeriod = 6.0
+shader_param/heatPhaseShift = 8.0
+shader_param/heatUpperLimit = 8.0
+shader_param/coldFXStrength = 1.0
+shader_param/coldNormal = ExtResource( 6 )
+
+[node name="World" type="Node"]
+
+[node name="Forest" type="Node2D" parent="."]
+
+[node name="ForestBack" type="Sprite" parent="Forest"]
+position = Vector2( 526, 242 )
+scale = Vector2( 4, 4 )
+texture = ExtResource( 18 )
+
+[node name="ForestTileMap" type="TileMap" parent="Forest"]
+scale = Vector2( 3, 3 )
+tile_set = ExtResource( 2 )
+cell_size = Vector2( 16, 16 )
+format = 1
+tile_data = PoolIntArray( 131071, 0, 131072, 65536, 0, 131079, 196607, 0, 65538, 131072, 0, 196615, 262143, 0, 196608, 196608, 0, 131077, 196609, 0, 5, 196628, 0, 131072, 196629, 0, 131079, 327679, 0, 327682, 262144, 0, 262149, 262145, 0, 393221, 262164, 0, 327682, 262165, 0, 65541, 393215, 0, 327682, 327680, 0, 196615, 327700, 0, 327682, 327701, 0, 196615, 458751, 0, 65538, 393216, 0, 327685, 393236, 0, 327682, 393237, 0, 196615, 524287, 0, 196608, 458752, 0, 196615, 458772, 0, 196608, 458773, 0, 196615, 589823, 0, 327682, 524288, 0, 131077, 524289, 0, 5, 524297, 0, 2, 524298, 0, 131073, 524299, 0, 131079, 524308, 0, 65538, 524309, 0, 65541, 655359, 0, 65538, 589824, 0, 327683, 589825, 0, 327685, 589833, 0, 196608, 589834, 0, 262147, 589835, 0, 131077, 589836, 0, 131078, 589837, 0, 131073, 589838, 0, 131079, 589843, 0, 2, 589844, 0, 131074, 589845, 0, 327685, 720895, 0, 327682, 655360, 0, 196613, 655361, 0, 65541, 655366, 0, 2, 655367, 0, 3, 655368, 0, 131078, 655369, 0, 131074, 655370, 0, 196609, 655371, 0, 131076, 655372, 0, 327684, 655373, 0, 196609, 655374, 0, 327685, 655378, 0, 2, 655379, 0, 131074, 655380, 0, 196611, 655381, 0, 327685, 786431, 0, 196608, 720896, 0, 196610, 720897, 0, 131077, 720898, 0, 131073, 720899, 0, 131078, 720900, 0, 131073, 720901, 0, 3, 720902, 0, 131074, 720903, 0, 262148, 720904, 0, 196612, 720905, 0, 196614, 720906, 0, 262148, 720907, 0, 262148, 720908, 0, 196609, 720909, 0, 196611, 720910, 0, 327685, 720913, 0, 2, 720914, 0, 131074, 720915, 0, 65540, 720916, 0, 327684, 720917, 0, 65541, 851967, 0, 327682, 786432, 0, 262147, 786433, 0, 65539, 786434, 0, 196611, 786435, 0, 131075, 786436, 0, 196611, 786437, 0, 196613, 786438, 0, 196610, 786439, 0, 196612, 786440, 0, 262147, 786441, 0, 262147, 786442, 0, 196612, 786443, 0, 327684, 786444, 0, 327683, 786445, 0, 327683, 786446, 0, 131077, 786447, 0, 3, 786448, 0, 131073, 786449, 0, 131074, 786450, 0, 65540, 786451, 0, 65539, 786452, 0, 196610, 786453, 0, 65541, 917503, 0, 262144, 851968, 0, 262150, 851969, 0, 262145, 851970, 0, 262150, 851971, 0, 393220, 851972, 0, 262150, 851973, 0, 393220, 851974, 0, 393220, 851975, 0, 393220, 851976, 0, 262150, 851977, 0, 393220, 851978, 0, 262150, 851979, 0, 393219, 851980, 0, 393219, 851981, 0, 262150, 851982, 0, 393220, 851983, 0, 262150, 851984, 0, 262145, 851985, 0, 393220, 851986, 0, 393219, 851987, 0, 262150, 851988, 0, 262150, 851989, 0, 393221 )
+
+[node name="Fire" type="Node2D" parent="."]
+modulate = Color( 1, 1, 1, 0 )
+
+[node name="FireBack" type="Sprite" parent="Fire"]
+position = Vector2( 526, 242 )
+scale = Vector2( 4, 4 )
+texture = ExtResource( 20 )
+
+[node name="FireTileMap" type="TileMap" parent="Fire"]
+scale = Vector2( 3, 3 )
+tile_set = ExtResource( 3 )
+cell_size = Vector2( 16, 16 )
+format = 1
+tile_data = PoolIntArray( 131071, 0, 131072, 65536, 0, 131079, 196607, 0, 65538, 131072, 0, 196615, 262143, 0, 196608, 196608, 0, 131077, 196609, 0, 5, 196628, 0, 131072, 196629, 0, 131079, 327679, 0, 327682, 262144, 0, 262149, 262145, 0, 393221, 262164, 0, 327682, 262165, 0, 65541, 393215, 0, 327682, 327680, 0, 196615, 327700, 0, 327682, 327701, 0, 196615, 458751, 0, 65538, 393216, 0, 327685, 393236, 0, 327682, 393237, 0, 196615, 524287, 0, 196608, 458752, 0, 196615, 458772, 0, 196608, 458773, 0, 196615, 589823, 0, 327682, 524288, 0, 131077, 524289, 0, 5, 524297, 0, 2, 524298, 0, 4, 524299, 0, 5, 524308, 0, 65538, 524309, 0, 65541, 655359, 0, 65538, 589824, 0, 327683, 589825, 0, 327685, 589833, 0, 327682, 589834, 0, 327683, 589835, 0, 131077, 589836, 0, 131078, 589837, 0, 131078, 589838, 0, 131079, 589843, 0, 2, 589844, 0, 131074, 589845, 0, 327685, 720895, 0, 327682, 655360, 0, 196613, 655361, 0, 196615, 655366, 0, 131072, 655367, 0, 131073, 655368, 0, 4, 655369, 0, 131074, 655370, 0, 196609, 655371, 0, 65540, 655372, 0, 196614, 655373, 0, 196611, 655374, 0, 65541, 655378, 0, 2, 655379, 0, 131074, 655380, 0, 196611, 655381, 0, 327685, 786431, 0, 196608, 720896, 0, 196610, 720897, 0, 131077, 720898, 0, 4, 720899, 0, 131073, 720900, 0, 131073, 720901, 0, 131078, 720902, 0, 131074, 720903, 0, 262148, 720904, 0, 262147, 720905, 0, 196614, 720906, 0, 262148, 720907, 0, 262148, 720908, 0, 196609, 720909, 0, 196611, 720910, 0, 327685, 720913, 0, 131072, 720914, 0, 131074, 720915, 0, 131076, 720916, 0, 327684, 720917, 0, 65541, 851967, 0, 327682, 786432, 0, 262147, 786433, 0, 196614, 786434, 0, 65540, 786435, 0, 262147, 786436, 0, 196609, 786437, 0, 196610, 786438, 0, 262148, 786439, 0, 196612, 786440, 0, 262147, 786441, 0, 262147, 786442, 0, 196612, 786443, 0, 327684, 786444, 0, 327683, 786445, 0, 327683, 786446, 0, 131077, 786447, 0, 131078, 786448, 0, 131078, 786449, 0, 131074, 786450, 0, 196614, 786451, 0, 65539, 786452, 0, 196610, 786453, 0, 65541, 917503, 0, 262144, 851968, 0, 262150, 851969, 0, 262145, 851970, 0, 262150, 851971, 0, 393220, 851972, 0, 262150, 851973, 0, 393220, 851974, 0, 393220, 851975, 0, 393220, 851976, 0, 262150, 851977, 0, 393220, 851978, 0, 262150, 851979, 0, 393219, 851980, 0, 393219, 851981, 0, 262150, 851982, 0, 393220, 851983, 0, 262150, 851984, 0, 262145, 851985, 0, 393220, 851986, 0, 393219, 851987, 0, 262150, 851988, 0, 262150, 851989, 0, 393221 )
+
+[node name="Ice" type="Node2D" parent="."]
+modulate = Color( 1, 1, 1, 0 )
+
+[node name="IceBack" type="Sprite" parent="Ice"]
+position = Vector2( 526, 242 )
+scale = Vector2( 4, 4 )
+texture = ExtResource( 19 )
+
+[node name="IceTileMap" type="TileMap" parent="Ice"]
+scale = Vector2( 3, 3 )
+tile_set = ExtResource( 4 )
+cell_size = Vector2( 16, 16 )
+format = 1
+tile_data = PoolIntArray( 131071, 0, 131072, 65536, 0, 131079, 196607, 0, 65538, 131072, 0, 196615, 262143, 0, 196608, 196608, 0, 131077, 196609, 0, 5, 196628, 0, 131072, 196629, 0, 131079, 327679, 0, 327682, 262144, 0, 262149, 262145, 0, 393221, 262164, 0, 327682, 262165, 0, 65541, 393215, 0, 327682, 327680, 0, 196615, 327700, 0, 327682, 327701, 0, 196615, 458751, 0, 65538, 393216, 0, 327685, 393236, 0, 327682, 393237, 0, 196615, 524287, 0, 196608, 458752, 0, 196615, 458772, 0, 196608, 458773, 0, 196615, 589823, 0, 327682, 524288, 0, 131077, 524289, 0, 5, 524297, 0, 2, 524298, 0, 131073, 524299, 0, 5, 524308, 0, 65538, 524309, 0, 65541, 655359, 0, 65538, 589824, 0, 327683, 589825, 0, 327685, 589833, 0, 327682, 589834, 0, 196611, 589835, 0, 131077, 589836, 0, 131073, 589837, 0, 3, 589838, 0, 5, 589843, 0, 2, 589844, 0, 131074, 589845, 0, 327685, 720895, 0, 327682, 655360, 0, 196613, 655361, 0, 327685, 655366, 0, 131072, 655367, 0, 4, 655368, 0, 131078, 655369, 0, 131074, 655370, 0, 196609, 655371, 0, 65539, 655372, 0, 65539, 655373, 0, 65539, 655374, 0, 65541, 655378, 0, 131072, 655379, 0, 131074, 655380, 0, 196611, 655381, 0, 327685, 786431, 0, 196608, 720896, 0, 196610, 720897, 0, 131077, 720898, 0, 131073, 720899, 0, 3, 720900, 0, 131078, 720901, 0, 131073, 720902, 0, 131074, 720903, 0, 327684, 720904, 0, 196613, 720905, 0, 196612, 720906, 0, 262148, 720907, 0, 262148, 720908, 0, 196609, 720909, 0, 196611, 720910, 0, 327685, 720913, 0, 2, 720914, 0, 131074, 720915, 0, 131075, 720916, 0, 327684, 720917, 0, 65541, 851967, 0, 327682, 786432, 0, 262147, 786433, 0, 327683, 786434, 0, 196611, 786435, 0, 327683, 786436, 0, 65540, 786437, 0, 131075, 786438, 0, 131076, 786439, 0, 196612, 786440, 0, 262147, 786441, 0, 262147, 786442, 0, 196612, 786443, 0, 327684, 786444, 0, 327683, 786445, 0, 327683, 786446, 0, 131077, 786447, 0, 131073, 786448, 0, 3, 786449, 0, 131074, 786450, 0, 131075, 786451, 0, 65539, 786452, 0, 196610, 786453, 0, 65541, 917503, 0, 262144, 851968, 0, 262150, 851969, 0, 262145, 851970, 0, 262150, 851971, 0, 393220, 851972, 0, 262150, 851973, 0, 393220, 851974, 0, 393220, 851975, 0, 393220, 851976, 0, 262150, 851977, 0, 393220, 851978, 0, 262150, 851979, 0, 393219, 851980, 0, 393219, 851981, 0, 262150, 851982, 0, 393220, 851983, 0, 262150, 851984, 0, 262145, 851985, 0, 393220, 851986, 0, 393219, 851987, 0, 262150, 851988, 0, 262150, 851989, 0, 393221 )
+
+[node name="KinematicBody2D" type="KinematicBody2D" parent="."]
+position = Vector2( 490, 266.897 )
+script = ExtResource( 5 )
+jumpForce = -400.0
+
+[node name="Kid" type="AnimatedSprite" parent="KinematicBody2D"]
+scale = Vector2( 2.5, 2.5 )
+frames = ExtResource( 1 )
+animation = "Idle"
+frame = 1
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="KinematicBody2D"]
+visible = false
+position = Vector2( 0, 5 )
+shape = SubResource( 1 )
+
+[node name="doJump" type="Timer" parent="KinematicBody2D"]
+wait_time = 0.1
+one_shot = true
+
+[node name="PostProcessing" type="ColorRect" parent="."]
+material = SubResource( 3 )
+anchor_right = 1.0
+anchor_bottom = 1.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="UI" type="Control" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource( 7 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Mild" type="Button" parent="UI"]
+anchor_left = 0.5
+anchor_right = 0.5
+margin_left = -100.0
+margin_right = 100.0
+margin_bottom = 40.0
+text = "Mild"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Hot" type="Button" parent="UI"]
+anchor_left = 0.5
+anchor_right = 0.5
+margin_left = 127.183
+margin_right = 327.183
+margin_bottom = 40.0
+text = "Hot"
+
+[node name="Cold" type="Button" parent="UI"]
+anchor_left = 0.5
+anchor_right = 0.5
+margin_left = -327.182
+margin_right = -127.182
+margin_bottom = 40.0
+text = "Cold"
+
+[node name="HSlider" type="HSlider" parent="UI"]
+anchor_left = 0.5
+anchor_right = 0.5
+margin_left = -323.0
+margin_top = 55.0
+margin_right = 326.0
+margin_bottom = 71.0
+min_value = -1.0
+max_value = 1.0
+step = 0.01
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Controls" type="Label" parent="UI"]
+modulate = Color( 0, 0, 0, 1 )
+margin_left = 188.623
+margin_top = 85.362
+margin_right = 331.623
+margin_bottom = 133.362
+rect_scale = Vector2( 2, 2 )
+text = "Move - Arrows/WASD
+Attack - V
+Jump - Up/W/Spacebar"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Credits" type="Label" parent="UI"]
+modulate = Color( 0, 0, 0, 1 )
+margin_left = 189.0
+margin_top = 196.0
+margin_right = 458.0
+margin_bottom = 234.0
+text = "Animated Pixel Adventurer - rvros
+Season Collection - GrafxKid"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Tween" type="Tween" parent="UI"]
+[connection signal="animation_finished" from="KinematicBody2D/Kid" to="KinematicBody2D" method="_on_Kid_animation_finished"]
+[connection signal="pressed" from="UI/Mild" to="UI" method="_on_ChangeWeather_pressed" binds= [ 0.0, 1, 0, 0 ]]
+[connection signal="pressed" from="UI/Hot" to="UI" method="_on_ChangeWeather_pressed" binds= [ 1, 0, 1, 0 ]]
+[connection signal="pressed" from="UI/Cold" to="UI" method="_on_ChangeWeather_pressed" binds= [ -1, 0, 0, 1 ]]
+[connection signal="value_changed" from="UI/HSlider" to="UI" method="_on_HSlider_value_changed"]
